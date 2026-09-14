@@ -1,11 +1,11 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from agente_llm import AgenteImportacaoLLM
+from pydantic import BaseModel
+from agente_llm import gerar_prospeccao_vendas
 
-app = FastAPI(title="ExportAI API", version="1.0")
+app = FastAPI(title="ExportAI - Módulo Vendas")
 
-# Libera o CORS para permitir que o frontend do Lovable acesse a API
+# Configuração para permitir que o Lovable acesse a API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,29 +14,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Inicializa o agente de IA
-try:
-    agente = AgenteImportacaoLLM()
-except Exception as e:
-    print(f"Erro ao carregar o agente: {e}")
-
-class ConsultaRequest(BaseModel):
+class VendasRequest(BaseModel):
     ncm: str
-    pergunta: str
-    top_n: int = 3
+    nome_produto: str
+    pais_alvo: str
+    idioma_alvo: str
 
-@app.get("/")
-def home():
-    return {"status": "online", "message": "API do ExportAI rodando com sucesso!"}
-
-@app.post("/analisar")
-def analisar_importacao(dados: ConsultaRequest):
+@app.post("/vendas/prospeccao")
+async def prospeccao_vendas(request: VendasRequest):
     try:
-        resposta = agente.gerar_conselho(
-            pergunta=dados.pergunta, 
-            ncm=dados.ncm.strip(), 
-            top_n=dados.top_n
+        resultado = gerar_prospeccao_vendas(
+            request.ncm, 
+            request.nome_produto, 
+            request.pais_alvo, 
+            request.idioma_alvo
         )
-        return {"status": "sucesso", "relatorio": resposta}
+        return {"status": "sucesso", "relatorio": resultado}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

@@ -1,59 +1,33 @@
 import os
 from google import genai
 from dotenv import load_dotenv
-from agente_retriever import ImportDataRetriever
 
 load_dotenv()
 
-class AgenteImportacaoLLM:
-    def __init__(self):
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise ValueError("Chave GEMINI_API_KEY não encontrada no arquivo .env.")
-            
-        self.client = genai.Client(api_key=api_key)
-        self.retriever = ImportDataRetriever()
-        self.modelo = "gemini-3.6-flash"
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-    def gerar_conselho(self, pergunta: str, ncm: str, top_n: int = 5):
-        contexto_dados = self.retriever.buscar_melhores_fornecedores(ncm=ncm, top_n=top_n)
+def gerar_prospeccao_vendas(ncm: str, nome_produto: str, pais_alvo: str, idioma_alvo: str) -> str:
+    prompt = f"""
+    Você é um especialista em Comércio Exterior e Vendas B2B internacionais.
+    O usuário deseja exportar o produto '{nome_produto}' (Código NCM: {ncm}) para o seguinte mercado: {pais_alvo}.
 
-        instrucoes_sistema = """Você é o Assistente Especialista de Importação sênior do ExportAI.
-Sua missão é fornecer uma consultoria estratégica profunda para empresários brasileiros com base ESTRITAMENTE nos dados fornecidos.
-REGRAS RÍGIDAS DE ANÁLISE:
-- NUNCA invente países, valores, tarifas ou fornecedores que não estejam no contexto.
-- USE EXCLUSIVAMENTE O NOME DO PAÍS fornecido nos dados (Ex: Índia, China, Estados Unidos). É terminantemente proibido utilizar códigos numéricos.
-- DETALHE O PASSO A PASSO: Explique detalhadamente por que o país principal foi escolhido (vantagens combinadas de FOB e frete, liquidez de mercado) e por que os demais concorrentes foram deixados em segundo plano (desvantagens de custo ou logística mais cara).
-- Estruture a resposta de forma executiva, clara e profissional.
-- Conclua abrindo a possibilidade de avançar para a etapa de negociação comercial com o país escolhido ou outro de preferência do empresário."""
+    Sua tarefa é focar exclusivamente no módulo de Vendas e entregar as duas etapas abaixo:
 
-        prompt_usuario = f"""
-[CONTEXTO DE DADOS GOVERNAMENTAIS - EXPORTAI]
-{contexto_dados}
+    1. Prospecção Ativa B2B:
+    - Identifique e liste os 3 melhores tipos de parceiros comerciais locais em {pais_alvo} (ex: distribuidores, atacadistas, redes de varejo, indústrias) para este produto.
+    - Explique brevemente por que cada perfil é o comprador ideal para este NCM.
 
-PERGUNTA DO EMPRESÁRIO: {pergunta}
-Baseado estritamente nos dados acima, elabore um relatório detalhado justificando a escolha e os trade-offs de cada rota.
-"""
-        print("🧠 [Agente] Gerando relatório estratégico detalhado com Gemini...")
-
-        resposta = self.client.models.generate_content(
-            model=self.modelo,
-            contents=prompt_usuario,
-            config={
-                'system_instruction': instrucoes_sistema,
-                'temperature': 0.2,
-            }
-        )
-
-        return resposta.text
-
-if __name__ == "__main__":
-    agente = AgenteImportacaoLLM()
-    pergunta = "Estou querendo importar esse produto. Olhando os dados de frete e preço, qual país oferece a melhor opção?"
+    2. Carta de Apresentação Comercial (Cold Email):
+    - Escreva um e-mail persuasivo e profissional de primeiro contato, direcionado a um desses parceiros ideais.
+    - O e-mail DEVE ser escrito inteiramente no idioma: {idioma_alvo}.
+    - O e-mail deve destacar o produto, propor uma parceria e incluir espaços para personalização (ex: [Nome da Empresa Alvo]).
     
-    conselho = agente.gerar_conselho(pergunta=pergunta, ncm="07129010", top_n=3)
+    Retorne o resultado de forma clara e bem estruturada.
+    """
     
-    print("\n" + "="*50)
-    print("💡 RESPOSTA FINAL DA INTELIGÊNCIA ARTIFICIAL:")
-    print("="*50)
-    print(conselho)
+    response = client.models.generate_content(
+        model='gemini-2.5-flash',
+        contents=prompt,
+    )
+    
+    return response.text
