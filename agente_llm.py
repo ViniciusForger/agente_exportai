@@ -4,31 +4,26 @@ from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
-
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-def gerar_prospeccao_vendas(ncm: str, nome_produto: str, pais_alvo: str, idioma_alvo: str) -> str:
+def gerar_prospeccao_vendas(ncm: str, nome_produto: str, pais_alvo: str, idioma_alvo: str, contexto_db: dict, contatos_hunter: list) -> str:
     prompt = f"""
-    Você é um especialista em Comércio Exterior e Vendas B2B internacionais.
-    O usuário deseja exportar o produto '{nome_produto}' (Código NCM: {ncm}) para o mercado alvo: {pais_alvo}.
+    Você é um especialista em Comércio Exterior B2B.
+    
+    DADOS DO PRODUTO:
+    - Produto: {nome_produto} (NCM: {ncm})
+    - Mercado Alvo: {pais_alvo}
+    
+    DADOS DE EXPORTAÇÃO (Extraídos do Banco de Dados Interno):
+    - {contexto_db}
+    
+    CONTATOS DE PROSPECÇÃO (Extraídos do Hunter.io):
+    - {contatos_hunter}
 
-    Sua tarefa é focar no módulo de Vendas Estratégicas e entregar as quatro etapas abaixo:
-
-    1. Justificativa do Mercado Alvo:
-    - Explique estrategicamente por que focar em {pais_alvo} é uma excelente escolha no momento atual para este produto (NCM).
-
-    2. Análise de País Alternativo (Prós e Contras):
-    - Sugira um segundo país (diferente de {pais_alvo}) que também tenha alto potencial de importação para este produto.
-    - Apresente os prós e contras de investir nesse país alternativo em vez de focar no mercado principal.
-
-    3. Prospecção Ativa B2B em {pais_alvo}:
-    - Identifique e liste os 3 melhores tipos de parceiros comerciais locais em {pais_alvo} para este produto.
-    - Explique brevemente por que cada perfil é o comprador ideal.
-
-    4. Carta de Apresentação Comercial (Cold Email):
-    - Escreva um e-mail persuasivo e profissional de primeiro contato.
-    - O e-mail DEVE ser escrito inteiramente no idioma: {idioma_alvo}.
-    - Destaque o produto, proponha uma parceria e inclua espaços para personalização.
+    Sua tarefa:
+    1. Estratégia B2B: Explique por que focar em {pais_alvo} é ideal para este produto e recomende 3 tipos de parceiros locais.
+    2. Carta de Apresentação (Cold Email): Escreva um e-mail persuasivo no idioma {idioma_alvo}. 
+    ATENÇÃO: Integre as informações de exportação (alíquotas/exigências) na carta para demonstrar autoridade. Direcione o e-mail para um dos contatos reais fornecidos na lista acima, se disponíveis.
     """
     
     tentativas = 3
@@ -39,7 +34,6 @@ def gerar_prospeccao_vendas(ncm: str, nome_produto: str, pais_alvo: str, idioma_
                 contents=prompt,
             )
             return response.text
-        
         except Exception as erro:
             if "503" in str(erro) and tentativa < tentativas - 1:
                 time.sleep(3)
