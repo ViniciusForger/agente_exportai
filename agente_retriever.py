@@ -7,11 +7,14 @@ load_dotenv()
 HUNTER_API_KEY = os.getenv("HUNTER_API_KEY")
 
 def buscar_dados_internos(ncm: str):
+    """Lê as tarifas reais diretamente do seu repositório no Hugging Face."""
     try:
         con = duckdb.connect(database=':memory:')
         con.execute("INSTALL httpfs;")
         con.execute("LOAD httpfs;")
+        
         url_parquet = "https://huggingface.co/datasets/ViniForger/importacoes-tarifas-brasil/resolve/main/fato_importacoes_tarifas.parquet"
+        
         query = f"SELECT * FROM read_parquet('{url_parquet}') WHERE ncm = '{ncm}' LIMIT 1"
         resultado = con.execute(query).df()
         con.close()
@@ -23,6 +26,7 @@ def buscar_dados_internos(ncm: str):
         return {"erro_leitura_db": str(erro)}
 
 def buscar_leads_hunter(dominio_empresa: str):
+    """Extrai e-mails corporativos reais através da API gratuita do Hunter.io."""
     url = f"https://api.hunter.io/v2/domain-search?domain={dominio_empresa}&api_key={HUNTER_API_KEY}"
     resposta = requests.get(url)
     if resposta.status_code == 200:

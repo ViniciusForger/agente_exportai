@@ -8,12 +8,13 @@ load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 def descobrir_dominios_b2b(nome_produto: str, pais_alvo: str) -> list:
-    """Usa o Gemini conectado ao Google Search para achar compradores REAIS."""
+    """Usa o Gemini conectado ao Google Search para encontrar compradores corporativos REAIS."""
     prompt = f"""
-    Pesquise na internet as 3 maiores redes de supermercados, atacadistas ou importadoras de alimentos do país: {pais_alvo}.
-    Eles devem ser compradores lógicos para o produto: {nome_produto}.
-    Retorne APENAS um array JSON contendo os domínios base oficiais dessas empresas (ex: ["carrefour.fr", "walmart.com"]).
-    Não invente domínios e não inclua diretórios ou lojas irrelevantes.
+    Pesquise no Google as 3 maiores redes de supermercados, atacadistas ou grandes empresas importadoras com foco em distribuição B2B no país: {pais_alvo}.
+    Eles devem ser compradores lógicos e reais para o produto: {nome_produto}.
+    IMPORTANTE: Exclua retalhistas pequenos, restaurantes locais, cafés, peixarias ou menus online. Queremos apenas grandes importadores corporativos.
+    Retorne APENAS um array JSON válido contendo os domínios base oficiais destas empresas (exemplo: ["nkg.coffee", "rewe.de"]).
+    Não invente domínios e não inclua qualquer texto extra além do JSON.
     """
     try:
         response = client.models.generate_content(
@@ -22,7 +23,7 @@ def descobrir_dominios_b2b(nome_produto: str, pais_alvo: str) -> list:
             config={
                 "temperature": 0.1, 
                 "response_mime_type": "application/json",
-                "tools": [{"google_search": {}}] # <--- ISSO CONECTA A IA AO GOOGLE
+                "tools": [{"google_search": {}}] # Ativa o Google Search Grounding nativo do Gemini
             } 
         )
         return json.loads(response.text)
@@ -31,16 +32,17 @@ def descobrir_dominios_b2b(nome_produto: str, pais_alvo: str) -> list:
         return []
 
 def gerar_prospeccao_vendas(ncm: str, nome_produto: str, pais_alvo: str, idioma_alvo: str, contexto_db: dict, contatos_hunter: dict) -> str:
+    """Gera a estratégia e o e-mail cruzando os dados do Parquet com os e-mails do Hunter."""
     prompt = f"""
-    Você é um analista de Comércio Exterior. 
-    PRODUTO: {nome_produto} (NCM: {ncm}) | MERCADO ALVO: {pais_alvo}
+    Você é um analista de Comércio Exterior de alto nível. 
     
+    PRODUTO: {nome_produto} (NCM: {ncm}) | MERCADO ALVO: {pais_alvo}
     DADOS TARIFÁRIOS: {contexto_db}
-    CONTATOS ENCONTRADOS: {contatos_hunter}
+    CONTATOS REAIS ENCONTRADOS: {contatos_hunter}
 
-    ENTREGÁVEIS:
-    1. Estratégia B2B: Defenda {pais_alvo} usando os dados tarifários reais. Sem invenções.
-    2. Carta (Cold Email) em {idioma_alvo}: Direcione a carta aos contatos encontrados.
+    ENTREGÁVEIS OBRIGATÓRIOS:
+    1. Estratégia B2B: Justifique {pais_alvo} usando estritamente os dados tarifários reais fornecidos. Sem invenções.
+    2. Carta (Cold Email) em {idioma_alvo}: Direcione a carta aos contatos encontrados. Utilize um tom profissional de negócios.
     """
     tentativas = 3
     for tentativa in range(tentativas):
