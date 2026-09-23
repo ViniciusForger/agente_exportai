@@ -37,32 +37,54 @@ def descobrir_dominios_b2b(nome_produto: str, pais_alvo: str) -> list:
         return []
 
 def gerar_prospeccao_vendas(ncm: str, nome_produto: str, pais_alvo: str, idioma_alvo: str, contexto_db: dict, dominios_reais: list, contatos_hunter: dict, quantidade: str, perfil_parceiro: str) -> str:
+    """Gera o Plano Estratégico completo, mas restringe as empresas aos dados reais capturados."""
     prompt = f"""
-    Você é um analista de Comércio Exterior de alto nível. 
+    Você é um consultor Sênior de Comércio Exterior desenvolvendo um Plano Comercial B2B.
     
+    PARÂMETROS DA EXPORTAÇÃO:
     PRODUTO: {nome_produto} (NCM: {ncm}) 
     VOLUME DISPONÍVEL: {quantidade}
     MERCADO ALVO: {pais_alvo}
-    PERFIL DE PARCEIRO BUSCADO: {perfil_parceiro}
-    DADOS TARIFÁRIOS REAIS: {contexto_db}
+    PERFIL DO PARCEIRO: {perfil_parceiro}
+    DADOS TARIFÁRIOS (Reais): {contexto_db}
     
-    DOMÍNIOS REAIS JÁ ENCONTRADOS PELO SISTEMA: {dominios_reais}
+    DADOS DE PROSPECÇÃO (Validados pelo Sistema):
+    EMPRESAS REAIS ENCONTRADAS: {dominios_reais}
     E-MAILS CAPTURADOS: {contatos_hunter}
 
-    [REGRA ABSOLUTA - RISCO DE FALHA CRÍTICA]: 
-    É ESTRITAMENTE PROIBIDO gerar tópicos listando "Empresas a Validar", "Organizações", "Associações", "Cámaras" ou qualquer nome de empresa. O sistema backend já fez a busca real. Sua única função é escrever o texto abaixo.
+    Sua tarefa é gerar um Plano Estratégico estruturado. 
+    
+    [REGRA ABSOLUTA DE DADOS - RISCO DE FALHA]: 
+    No tópico 2, você SÓ PODE listar as empresas que estão na variável EMPRESAS REAIS ENCONTRADAS. É estritamente proibido inventar nomes, adicionar associações governamentais, câmaras de comércio ou citar outras marcas que não estejam nessa lista.
 
-    ENTREGÁVEIS OBRIGATÓRIOS:
-    1. Estratégia de Mercado: Justifique a viabilidade de exportar {quantidade} para {pais_alvo} focando no perfil {perfil_parceiro}, baseando-se EXCLUSIVAMENTE nos dados tarifários.
-    2. Carta de Apresentação (Cold Email) em {idioma_alvo}: Direcione a carta de forma profissional aos e-mails capturados.
+    Gere o relatório EXATAMENTE com a seguinte estrutura:
+
+    1. Principais Canais de Distribuição
+    Analise os melhores canais para escoar {quantidade} de {nome_produto} na {pais_alvo}, considerando o perfil {perfil_parceiro}.
+
+    2. Empresas Potenciais a Validar
+    Liste APENAS as empresas fornecidas na variável EMPRESAS REAIS ENCONTRADAS. Crie uma breve justificativa factual de por que elas se encaixam como boas compradoras para este produto. Inclua os domínios.
+
+    3. Notícias, Tendências e Mudanças Regulatórias
+    Analise o consumo local e utilize os DADOS TARIFÁRIOS fornecidos para explicar regras de importação e impostos.
+
+    4. Oportunidades e Riscos
+    Liste prós e contras reais da exportação deste produto para este mercado.
+
+    5. Plano de Ação em 30 Dias
+    Um checklist tático (semanal) para fechar negócio.
+
+    6. E-mail Inicial de Prospecção
+    Escreva um Cold Email B2B altamente persuasivo em {idioma_alvo}, focado em vender para os diretores dos E-MAILS CAPTURADOS.
     """
+    
     tentativas = 3
     for tentativa in range(tentativas):
         try:
             response = client.models.generate_content(
                 model='gemini-1.5-flash',
                 contents=prompt,
-                config={"temperature": 0.0} 
+                config={"temperature": 0.1} # Temperatura baixa para garantir a obediência às regras
             )
             return response.text
         except Exception as erro:
