@@ -16,6 +16,7 @@ def descobrir_dominios_b2b(nome_produto: str, pais_alvo: str) -> list:
     1. ZERO VAREJO/RETALHO: É estritamente proibido listar redes de supermercados (ex: Aldi, Rewe, Lidl, Carrefour, Walmart). Procure os importadores B2B que abastecem o retalho.
     2. ZERO ALUCINAÇÃO: Só inclua um domínio se ele for de uma empresa real que você acabou de validar na sua pesquisa do Google.
     3. PRECISÃO: Exclua associações, governos, peixarias ou restaurantes. Queremos apenas empresas de comércio exterior/distribuição.
+    4. ZERO EQUIPAMENTOS/MÁQUINAS: Exclua sumariamente empresas de venda, reparação ou peças para máquinas de café, moinhos, torrefadoras industriais ou equipamento gastronómico. O alvo é ESTRITAMENTE quem compra a MATÉRIA-PRIMA/ALIMENTO.
     
     Retorne APENAS um array JSON válido contendo os domínios base (sem https, sem www). 
     Exemplo de formato: ["importador-real.de", "distribuidora-b2b.com", "grupo-atacadista.fr"]
