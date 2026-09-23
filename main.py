@@ -37,14 +37,14 @@ async def prospeccao_vendas(request: VendasRequest):
                 if emails:
                     contatos_finais[dominio] = emails
                 
-       # 4. IA gera a análise e o e-mail com os dados de imposto + contatos reais
+        # 4. IA gera a análise passando TUDO e proibindo invenções
         resultado = gerar_prospeccao_vendas(
             request.ncm, 
             request.nome_produto, 
             request.pais_alvo, 
             request.idioma_alvo,
             dados_tecnicos,
-            dominios_descobertos, # <--- A VARIÁVEL NOVA ENTRA AQUI
+            dominios_descobertos,
             contatos_finais
         )
         
