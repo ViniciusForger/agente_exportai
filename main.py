@@ -23,13 +23,13 @@ class VendasRequest(BaseModel):
 @app.post("/vendas/prospeccao")
 async def prospeccao_vendas(request: VendasRequest):
     try:
-        # 1. Lê os dados no DuckDB (Hugging Face)
+        # 1. Lê os dados reais do DuckDB (Hugging Face)
         dados_tecnicos = buscar_dados_internos(request.ncm)
         
-        # 2. IA utiliza o Google Search para encontrar as empresas (Filtro Anti-Peixaria)
+        # 2. IA usa Google Search focado em distribuidores B2B (Filtro rigoroso)
         dominios_descobertos = descobrir_dominios_b2b(request.nome_produto, request.pais_alvo)
         
-        # 3. Hunter varre os sites reais para extrair os e-mails
+        # 3. Hunter varre os sites validados para extrair os e-mails
         contatos_finais = {}
         if dominios_descobertos:
             for dominio in dominios_descobertos:
@@ -37,7 +37,7 @@ async def prospeccao_vendas(request: VendasRequest):
                 if emails:
                     contatos_finais[dominio] = emails
                 
-        # 4. IA escreve a carta baseada em factos e dados reais
+        # 4. IA gera a análise e o e-mail com os dados de imposto + contatos reais
         resultado = gerar_prospeccao_vendas(
             request.ncm, 
             request.nome_produto, 
