@@ -56,3 +56,45 @@ async def prospeccao_vendas(request: VendasRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class VendasRequest(BaseModel):
+    ncm: str
+    nome_produto: str
+    pais_alvo: str
+    idioma_alvo: str
+    quantidade: str       # Novo campo do Lovable
+    perfil_parceiro: str  # Novo campo do Lovable
+
+@app.post("/vendas/prospeccao")
+async def prospeccao_vendas(request: VendasRequest):
+    try:
+        dados_tecnicos = buscar_dados_internos(request.ncm)
+        dominios_descobertos = descobrir_dominios_b2b(request.nome_produto, request.pais_alvo)
+        
+        contatos_finais = {}
+        if dominios_descobertos:
+            for dominio in dominios_descobertos:
+                emails = buscar_leads_hunter(dominio)
+                if emails:
+                    contatos_finais[dominio] = emails
+                
+        resultado = gerar_prospeccao_vendas(
+            request.ncm, 
+            request.nome_produto, 
+            request.pais_alvo, 
+            request.idioma_alvo,
+            dados_tecnicos,
+            dominios_descobertos,
+            contatos_finais,
+            request.quantidade,       # Passando o dado da tela
+            request.perfil_parceiro   # Passando o dado da tela
+        )
+        
+        return {
+            "status": "sucesso",
+            "empresas_alvo": dominios_descobertos,
+            "leads_encontrados": contatos_finais,
+            "relatorio": resultado
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

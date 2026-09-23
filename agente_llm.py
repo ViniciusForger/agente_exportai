@@ -36,23 +36,25 @@ def descobrir_dominios_b2b(nome_produto: str, pais_alvo: str) -> list:
         print(f"Erro na busca Google/Gemini: {erro}")
         return []
 
-def gerar_prospeccao_vendas(ncm: str, nome_produto: str, pais_alvo: str, idioma_alvo: str, contexto_db: dict, dominios_reais: list, contatos_hunter: dict) -> str:
-    """Gera a estratégia e o e-mail blindando contra listas inventadas."""
+def gerar_prospeccao_vendas(ncm: str, nome_produto: str, pais_alvo: str, idioma_alvo: str, contexto_db: dict, dominios_reais: list, contatos_hunter: dict, quantidade: str, perfil_parceiro: str) -> str:
     prompt = f"""
-    Você é um analista de Comércio Exterior. 
+    Você é um analista de Comércio Exterior de alto nível. 
     
-    PRODUTO: {nome_produto} (NCM: {ncm}) | MERCADO ALVO: {pais_alvo}
+    PRODUTO: {nome_produto} (NCM: {ncm}) 
+    VOLUME DISPONÍVEL: {quantidade}
+    MERCADO ALVO: {pais_alvo}
+    PERFIL DE PARCEIRO BUSCADO: {perfil_parceiro}
     DADOS TARIFÁRIOS REAIS: {contexto_db}
-    DOMÍNIOS ALVO PESQUISADOS: {dominios_reais}
-    E-MAILS ENCONTRADOS: {contatos_hunter}
+    
+    DOMÍNIOS REAIS JÁ ENCONTRADOS PELO SISTEMA: {dominios_reais}
+    E-MAILS CAPTURADOS: {contatos_hunter}
+
+    [REGRA ABSOLUTA - RISCO DE FALHA CRÍTICA]: 
+    É ESTRITAMENTE PROIBIDO gerar tópicos listando "Empresas a Validar", "Organizações", "Associações", "Cámaras" ou qualquer nome de empresa. O sistema backend já fez a busca real. Sua única função é escrever o texto abaixo.
 
     ENTREGÁVEIS OBRIGATÓRIOS:
-    1. Estratégia B2B Data-Driven: Justifique {pais_alvo} usando ESTRITAMENTE os dados tarifários reais.
-    [REGRA ABSOLUTA]: É PROIBIDO criar tópicos listando "Empresas Potenciais", "Organizações", "Associações" ou qualquer nome de empresa. Foque apenas na análise de mercado e impostos. Não invente nomes.
-
-    2. Carta de Apresentação (Cold Email) em {idioma_alvo}:
-       - Direcione a carta aos e-mails encontrados.
-       - Utilize os dados de impostos como argumento de venda.
+    1. Estratégia de Mercado: Justifique a viabilidade de exportar {quantidade} para {pais_alvo} focando no perfil {perfil_parceiro}, baseando-se EXCLUSIVAMENTE nos dados tarifários.
+    2. Carta de Apresentação (Cold Email) em {idioma_alvo}: Direcione a carta de forma profissional aos e-mails capturados.
     """
     tentativas = 3
     for tentativa in range(tentativas):
@@ -60,7 +62,7 @@ def gerar_prospeccao_vendas(ncm: str, nome_produto: str, pais_alvo: str, idioma_
             response = client.models.generate_content(
                 model='gemini-1.5-flash',
                 contents=prompt,
-                config={"temperature": 0.0} # Temperatura ZERO no redator também
+                config={"temperature": 0.0} 
             )
             return response.text
         except Exception as erro:
