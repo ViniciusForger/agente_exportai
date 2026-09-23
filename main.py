@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from agente_llm import gerar_prospeccao_vendas
-from agente_retriever import buscar_dados_internos, buscar_sites_reais, buscar_leads_hunter
+from agente_llm import descobrir_dominios_b2b, gerar_prospeccao_vendas
+from agente_retriever import buscar_dados_internos, buscar_leads_hunter
 
 app = FastAPI(title="ExportAI - Módulo Vendas B2B")
 
@@ -25,17 +25,17 @@ async def prospeccao_vendas(request: VendasRequest):
     try:
         dados_tecnicos = buscar_dados_internos(request.ncm)
         
-        # 1. Pesquisa os sites ao vivo
-        dominios_encontrados = buscar_sites_reais(request.nome_produto, request.pais_alvo)
+        # 1. IA faz pesquisa semântica no Google (Fugindo das peixarias)
+        dominios_descobertos = descobrir_dominios_b2b(request.nome_produto, request.pais_alvo)
         
-        # 2. Extrai os e-mails via Hunter para cada site
+        # 2. Hunter varre os sites reais
         contatos_finais = {}
-        for dominio in dominios_encontrados:
+        for dominio in dominios_descobertos:
             emails = buscar_leads_hunter(dominio)
             if emails:
                 contatos_finais[dominio] = emails
                 
-        # 3. Gera a carta baseada em fatos
+        # 3. IA escreve a carta com tudo integrado
         resultado = gerar_prospeccao_vendas(
             request.ncm, 
             request.nome_produto, 
@@ -47,7 +47,7 @@ async def prospeccao_vendas(request: VendasRequest):
         
         return {
             "status": "sucesso",
-            "empresas_reais_pesquisadas": dominios_encontrados,
+            "empresas_alvo": dominios_descobertos,
             "leads_encontrados": contatos_finais,
             "relatorio": resultado
         }

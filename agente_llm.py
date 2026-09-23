@@ -1,37 +1,54 @@
 import os
 import time
+import json
 from google import genai
 from dotenv import load_dotenv
 
 load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-def gerar_prospeccao_vendas(ncm: str, nome_produto: str, pais_alvo: str, idioma_alvo: str, contexto_db: dict, contatos_hunter: list) -> str:
+def descobrir_dominios_b2b(nome_produto: str, pais_alvo: str) -> list:
+    """Usa o Gemini conectado ao Google Search para achar compradores REAIS."""
     prompt = f"""
-    Você é um especialista em Comércio Exterior B2B.
-    
-    DADOS DO PRODUTO:
-    - Produto: {nome_produto} (NCM: {ncm})
-    - Mercado Alvo: {pais_alvo}
-    
-    DADOS DE EXPORTAÇÃO (Extraídos do Banco de Dados Interno):
-    - {contexto_db}
-    
-    CONTATOS DE PROSPECÇÃO (Extraídos do Hunter.io):
-    - {contatos_hunter}
-
-    Sua tarefa:
-    1. Estratégia B2B: Explique por que focar em {pais_alvo} é ideal para este produto e recomende 3 tipos de parceiros locais.
-    2. Carta de Apresentação (Cold Email): Escreva um e-mail persuasivo no idioma {idioma_alvo}. 
-    ATENÇÃO: Integre as informações de exportação (alíquotas/exigências) na carta para demonstrar autoridade. Direcione o e-mail para um dos contatos reais fornecidos na lista acima, se disponíveis.
+    Pesquise na internet as 3 maiores redes de supermercados, atacadistas ou importadoras de alimentos do país: {pais_alvo}.
+    Eles devem ser compradores lógicos para o produto: {nome_produto}.
+    Retorne APENAS um array JSON contendo os domínios base oficiais dessas empresas (ex: ["carrefour.fr", "walmart.com"]).
+    Não invente domínios e não inclua diretórios ou lojas irrelevantes.
     """
+    try:
+        response = client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt,
+            config={
+                "temperature": 0.1, 
+                "response_mime_type": "application/json",
+                "tools": [{"google_search": {}}] # <--- ISSO CONECTA A IA AO GOOGLE
+            } 
+        )
+        return json.loads(response.text)
+    except Exception as erro:
+        print(f"Erro na busca Google/Gemini: {erro}")
+        return []
+
+def gerar_prospeccao_vendas(ncm: str, nome_produto: str, pais_alvo: str, idioma_alvo: str, contexto_db: dict, contatos_hunter: dict) -> str:
+    prompt = f"""
+    Você é um analista de Comércio Exterior. 
+    PRODUTO: {nome_produto} (NCM: {ncm}) | MERCADO ALVO: {pais_alvo}
     
+    DADOS TARIFÁRIOS: {contexto_db}
+    CONTATOS ENCONTRADOS: {contatos_hunter}
+
+    ENTREGÁVEIS:
+    1. Estratégia B2B: Defenda {pais_alvo} usando os dados tarifários reais. Sem invenções.
+    2. Carta (Cold Email) em {idioma_alvo}: Direcione a carta aos contatos encontrados.
+    """
     tentativas = 3
     for tentativa in range(tentativas):
         try:
             response = client.models.generate_content(
-                model='gemini-3.6-flash',
+                model='gemini-1.5-flash',
                 contents=prompt,
+                config={"temperature": 0.1} 
             )
             return response.text
         except Exception as erro:
